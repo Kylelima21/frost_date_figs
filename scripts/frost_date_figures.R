@@ -33,10 +33,6 @@ fd <- bind_rows(t1, t2) %>%
   filter(year > 1982 & year < 2023)
 
 
-## PNG for figures!
-rema <- readPNG("data/acer_rubrum.png")
-
-
 
 #------------------------------------------------#
 ####             Read and Clean               ####
@@ -87,7 +83,7 @@ spring %>%
   ggplot(aes(x = year, y = last.frost)) +
   geom_line(linewidth = 0.6, color = "gray20") +
   geom_point(size = 1.1, color = "gray20") + 
-  geom_smooth(se = F, span = 10, color = "#578e5b") +
+  geom_smooth(method = "lm", se = F, color = "#578e5b") +
   labs(title = "Acadia National Park last spring frost", 
        subtitle = "Data from the McFarland Hill weather station 1983 - 2022",
        caption = "Figure created by Schoodic Institute",
@@ -104,6 +100,7 @@ spring %>%
 
 ggsave("outputs/last_frosts_1983_2022.png", height = 6, width = 8.5, dpi = 350)
 
+lm(last.frost ~ year, data=spring)
 
 
 ### Fall figure
@@ -128,7 +125,7 @@ fall %>%
   ggplot(aes(x = year, y = first.frost)) +
   geom_line(linewidth = 0.6, color = "gray20") +
   geom_point(size = 1.1, color = "gray20") + 
-  geom_smooth(se = F, span = 10, color = "#C57E21") +
+  geom_smooth(method = "lm", se = F, color = "#C57E21") +
   labs(title = "Acadia National Park first fall frost", 
        subtitle = "Data from the McFarland Hill weather station 1983 - 2022",
        caption = "Figure created by Schoodic Institute",
@@ -147,5 +144,5 @@ fall %>%
 ggsave("outputs/first_frosts_1983_2022.png", height = 6, width = 8.5, dpi = 350)
 
 
-
+lm(first.frost ~ year, data=fall)
 

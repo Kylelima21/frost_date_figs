@@ -14,7 +14,7 @@ library(tidyverse)
 #------------------------------------------------#
 
 ## Read and clean 1982 - 2014 data
-t1 <- read.csv("data/ME170100_2551daily.csv") %>% 
+t1 <- tibble(read.csv("data/ME170100_2551daily.csv")) %>% 
   select(Day, Month, Year, julian = JD, tavg = TmeanF, tmax = TmaxF, tmin = TminF) %>% 
   rename_with(., ~tolower(.))
 
@@ -30,7 +30,8 @@ t2 <- read.csv("data/USR0000MMCF_daily_2014_2023.csv") %>%
 
 fd <- bind_rows(t1, t2) %>% 
   filter(!is.na(tmin)) %>% 
-  filter(year > 1982 & year < 2023)
+  filter(year > 1982 & year < 2023) %>% 
+  filter(year != 2021)
 
 
 
@@ -43,7 +44,7 @@ spring <- fd %>%
   group_by(year) %>% 
   filter(julian < 180 & tmin <= 32) %>% 
   slice(which.max(julian)) %>% 
-  select(year, month, day, last.frost = julian, tmin) %>% 
+  select(year, month, day, julian, tmin) %>% 
   mutate(last.frost = as.Date(paste(2000, month, day, sep = "-")))
 
 
@@ -52,7 +53,7 @@ fall <- fd %>%
   group_by(year) %>% 
   filter(julian > 180 & tmin <= 32) %>% 
   slice(which.min(julian)) %>% 
-  select(year, month, day, first.frost = julian, tmin) %>% 
+  select(year, month, day, julian, tmin) %>% 
   mutate(first.frost = as.Date(paste(2000, month, day, sep = "-")))
 
 
@@ -103,6 +104,7 @@ ggsave("outputs/last_frosts_1983_2022.png", height = 6, width = 8.5, dpi = 350)
 lm(last.frost ~ year, data=spring)
 
 
+
 ### Fall figure
 ## Base plotting
 plot(fall$year, fall$first.frost,
@@ -146,3 +148,44 @@ ggsave("outputs/first_frosts_1983_2022.png", height = 6, width = 8.5, dpi = 350)
 
 lm(first.frost ~ year, data=fall)
 
+
+
+## Plot both temperatures
+
+
+
+#------------------------------------------------#
+####            Frost-free period             ####
+#------------------------------------------------#
+
+## Manupilute and calculate
+ff <- left_join(spring, fall, by = "year") %>% 
+  select(year, lf.julian = julian.x, ff.julian = julian.y, last.frost, first.frost) %>% 
+  mutate(ff.period = ff.julian - lf.julian)
+
+## Create ggplot
+ff %>% 
+  ggplot(aes(x = year, y = ff.period)) +
+  geom_line(linewidth = 0.6, color = "gray20") +
+  geom_point(size = 1.1, color = "gray20") + 
+  geom_smooth(method = "lm", se = F, color = "#CF1D10") +
+  labs(title = "Acadia National Park frost-free period", 
+       subtitle = "Data from the McFarland Hill weather station 1983 - 2022",
+       caption = "Figure created by Schoodic Institute",
+       x = "Year",
+       y = "Number of days") +
+  theme_classic() +
+  theme(axis.title = element_text(color = "black", size = 13),
+        axis.text = element_text(color = "black", size = 12),
+        plot.title = element_text(size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(0,.5,0,0, unit = "cm")),
+        axis.title.x = element_text(margin = margin(.5,0,0,0, unit = "cm")),
+        plot.margin = margin(0.5,0.5,0.5,0.5, unit = "cm"),
+        plot.subtitle = element_text(margin = margin(0,0,0.5,0, unit = "cm")))
+
+## Save
+ggsave("outputs/frost_free_period_1983_2022.png", height = 6, width = 8.5, dpi = 350)
+
+
+## Run lm for stats
+lm(ff.period ~ year, data=ff)
